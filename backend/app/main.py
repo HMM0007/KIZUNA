@@ -243,18 +243,43 @@ def create_review(payload: ReviewCreate) -> dict[str, Any]:
     return {"id": cursor.lastrowid, "status": "recorded", "reviewed_at": reviewed_at}
 
 
-@app.get("/api/reviews", tags=["Human Review"])
-def list_reviews() -> dict[str, Any]:
+def review_query(select: str, where: str = "", params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
     with db_connection() as connection:
         rows = connection.execute(
-            """
-            SELECT r.id, r.encounter_id, r.decision, r.reviewer, r.notes, r.reviewed_at,
-                   e.patient_id, e.diagnosis, e.namaste_code, e.namaste_english,
-                   e.tm2_code, e.tm2_term, e.tm2_uri, e.mapping_class, e.mapping_status,
-                   e.relationship, e.confidence, e.source, e.version,
-                   e.biomedical_code, e.biomedical_term, e.short_definition, e.long_definition,
-                   e.namaste_term_diacritical, e.namaste_term_devanagari
-            FROM reviews r JOIN encounters e ON e.id = r.encounter_id ORDER BY r.id DESC
-            """
+            f"""
+            {select}
+            FROM encounters e
+            LEFT JOIN reviews r ON r.id = (
+                SELECT r2.id FROM reviews r2
+                WHERE r2.encounter_id = e.id
+                ORDER BY r2.id DESC LIMIT 1
+            )
+            {where}
+            ORDER BY e.id DESC
+            """,
+            params,
         ).fetchall()
-    return {"count": len(rows), "results": [dict(row) for row in rows]}
+    return [dict(row) for row in rows]
+
+
+REVIEWABLE_SQL = "e.mapping_class IN ('FOUNDATION_CONCEPT_ONLY', 'UNMAPPED')"
+REVIEWED_SQL = "r.decision IN ('APPROVED', 'REJECTED')"
+PENDING_SQL = f"({REVIEWABLE_SQL}) AND (r.id IS NULL OR r.decision = 'REVIEW')"
+
+REVIEW_SELECT = """
+SELECT e.*, r.id AS review_id, r.decision AS review_decision,
+       r.reviewer AS review_reviewer, r.notes AS review_notes,
+       r.reviewed_at AS review_reviewed_at
+"""
+
+
+@app.get("/api/reviews/pending", tags=["Human Review"])
+def list_pending_reviews() -> dict[str, Any]:
+    results = review_query(REVIEW_SELECT, f"WHERE {PENDING_SQL}")
+    return {"count": len(results), "results": results}
+
+
+@app.get("/api/reviews", tags=["Human Review"])
+def list_reviews() -> dict[str, Any]:
+    results = review_query(REVIEW_SELECT, f"WHERE {REVIEWABLE_SQL}")
+    return {"count": len(results), "results": results}
