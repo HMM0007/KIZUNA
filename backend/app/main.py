@@ -283,3 +283,58 @@ def list_pending_reviews() -> dict[str, Any]:
 def list_reviews() -> dict[str, Any]:
     results = review_query(REVIEW_SELECT, f"WHERE {REVIEWABLE_SQL} AND {REVIEWED_SQL}")
     return {"count": len(results), "results": results}
+
+
+@app.get("/api/analytics/summary", tags=["Analytics"])
+def analytics_summary() -> dict[str, Any]:
+    with db_connection() as connection:
+        total = connection.execute("SELECT COUNT(*) FROM encounters").fetchone()[0]
+        mapping_rows = connection.execute(
+            "SELECT mapping_class, COUNT(*) AS count FROM encounters GROUP BY mapping_class"
+        ).fetchall()
+        review_rows = connection.execute(
+            """
+            SELECT r.decision, COUNT(*) AS count
+            FROM reviews r
+            JOIN (
+                SELECT encounter_id, MAX(id) AS latest_id
+                FROM reviews
+                GROUP BY encounter_id
+            ) latest ON latest.latest_id = r.id
+            GROUP BY r.decision
+            """
+        ).fetchall()
+        pending = connection.execute(
+            f"""
+            SELECT COUNT(*) FROM encounters e
+            LEFT JOIN reviews r ON r.id = (
+                SELECT r2.id FROM reviews r2
+                WHERE r2.encounter_id = e.id
+                ORDER BY r2.id DESC LIMIT 1
+            )
+            WHERE {PENDING_SQL}
+            """
+        ).fetchone()[0]
+
+    mapping = {row["mapping_class"]: row["count"] for row in mapping_rows}
+    reviews = {row["decision"]: row["count"] for row in review_rows}
+    mapped = mapping.get("DIRECT_CODE_ALIGNMENT", 0) + mapping.get("CROSS_CODE_MAPPING", 0)
+
+    return {
+        "total_encounters": total,
+        "mapped_encounters": mapped,
+        "mapped_rate": round((mapped / total) * 100, 1) if total else 0,
+        "review_required": pending,
+        "mapping_distribution": {
+            "DIRECT_CODE_ALIGNMENT": mapping.get("DIRECT_CODE_ALIGNMENT", 0),
+            "CROSS_CODE_MAPPING": mapping.get("CROSS_CODE_MAPPING", 0),
+            "FOUNDATION_CONCEPT_ONLY": mapping.get("FOUNDATION_CONCEPT_ONLY", 0),
+            "UNMAPPED": mapping.get("UNMAPPED", 0),
+        },
+        "review_distribution": {
+            "PENDING": pending,
+            "APPROVED": reviews.get("APPROVED", 0),
+            "REJECTED": reviews.get("REJECTED", 0),
+            "REVIEW": reviews.get("REVIEW", 0),
+        },
+    }
