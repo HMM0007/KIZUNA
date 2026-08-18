@@ -15,9 +15,9 @@ DATA_FILE = ROOT_DIR / "frontend" / "public" / "data" / "namaste_prototype_300_t
 DB_FILE = Path(__file__).resolve().parents[1] / "kizuna.db"
 
 app = FastAPI(
-    title="KIZUNA API",
+    title="Team Tenacious Interoperability API",
     version="0.1.0",
-    description="Prototype API for terminology mapping, encounters, and human review.",
+    description="REST API for NAMASTE–ICD-11 TM2 terminology mapping, clinical encounter integration, mapping evidence, and human review.",
 )
 
 app.add_middleware(
@@ -112,10 +112,10 @@ def startup() -> None:
 
 @app.get("/api/health", tags=["System"])
 def health() -> dict[str, str]:
-    return {"status": "ok", "service": "kizuna-api", "version": app.version}
+    return {"status": "ok", "service": "team-tenacious-interoperability-api", "version": app.version}
 
 
-@app.get("/api/terminology/search", tags=["Terminology"])
+@app.get("/api/terminology/search", tags=["Terminology Mapping"])
 def search_terminology(
     q: str = Query(min_length=1),
     limit: int = Query(default=12, ge=1, le=50),
@@ -123,9 +123,6 @@ def search_terminology(
     query = normalize(q)
     results: list[dict[str, str]] = []
 
-    # Search across the complete set of clinically useful terminology fields.
-    # This includes source/target codes, English and Sanskrit terms, definitions,
-    # biomedical references, and the relationship metadata used by the prototype.
     searchable_fields = (
         "NAMASTE_PRIMARY_CODE",
         "NAMASTE_CODE",
@@ -151,7 +148,7 @@ def search_terminology(
     return {"query": q, "count": len(results), "results": results}
 
 
-@app.get("/api/terminology/{namaste_code}", tags=["Terminology"])
+@app.get("/api/terminology/{namaste_code}", tags=["Terminology Mapping"])
 def get_terminology(namaste_code: str) -> dict[str, Any]:
     for concept in load_terminology():
         if normalize(concept.get("NAMASTE_CODE")) == normalize(namaste_code):
@@ -218,7 +215,7 @@ def get_encounter(encounter_id: int) -> dict[str, Any]:
     return dict(row)
 
 
-@app.post("/api/reviews", status_code=201, tags=["Reviews"])
+@app.post("/api/reviews", status_code=201, tags=["Human Review"])
 def create_review(payload: ReviewCreate) -> dict[str, Any]:
     reviewed_at = datetime.now(timezone.utc).isoformat()
 
@@ -247,7 +244,7 @@ def create_review(payload: ReviewCreate) -> dict[str, Any]:
     return {"id": cursor.lastrowid, "status": "recorded", "reviewed_at": reviewed_at}
 
 
-@app.get("/api/reviews", tags=["Reviews"])
+@app.get("/api/reviews", tags=["Human Review"])
 def list_reviews() -> dict[str, Any]:
     with db_connection() as connection:
         rows = connection.execute(
