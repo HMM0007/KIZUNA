@@ -27,6 +27,11 @@ export function healthCheckApi() {
   return request("/api/health");
 }
 
+export function listTerminologyApi(limit = 300, offset = 0) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  return request(`/api/terminology?${params.toString()}`);
+}
+
 export function searchTerminologyApi(query, limit = 12) {
   const params = new URLSearchParams({ q: query, limit: String(limit) });
   return request(`/api/terminology/search?${params.toString()}`);
