@@ -23,6 +23,10 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+export function healthCheckApi() {
+  return request("/api/health");
+}
+
 export function searchTerminologyApi(query, limit = 12) {
   const params = new URLSearchParams({ q: query, limit: String(limit) });
   return request(`/api/terminology/search?${params.toString()}`);
