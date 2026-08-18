@@ -55,4 +55,8 @@ export function listReviewsApi() {
   return request("/api/reviews");
 }
 
+export function listPendingReviewsApi() {
+  return request("/api/reviews/pending");
+}
+
 export { API_BASE_URL };
