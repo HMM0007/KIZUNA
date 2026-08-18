@@ -8,18 +8,13 @@ import Encounters from "./pages/Encounters";
 import Mapping from "./pages/Mapping";
 import ReviewQueue from "./pages/ReviewQueue";
 import PatientDetails from "./pages/PatientDetails";
-import NewEncounter from "./pages/NewEncounter";
+import NewEncounterApi from "./pages/NewEncounterApi";
 
 function Settings() {
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">
-        Settings
-      </h1>
-
-      <p className="mt-1 text-sm text-slate-500">
-        Application settings will appear here.
-      </p>
+      <h1 className="text-xl font-semibold text-slate-900">Settings</h1>
+      <p className="mt-1 text-sm text-slate-500">Application settings will appear here.</p>
     </div>
   );
 }
@@ -35,10 +30,9 @@ function App() {
           <Route path="/mapping" element={<Mapping />} />
           <Route path="/reviews" element={<ReviewQueue />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/patients/:patientId" element={<PatientDetails />}/>
-          <Route  path="/patients/:patientId/encounters/new" element={<NewEncounter /> }/>
-          </Route>
-
+          <Route path="/patients/:patientId" element={<PatientDetails />} />
+          <Route path="/patients/:patientId/encounters/new" element={<NewEncounterApi />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
