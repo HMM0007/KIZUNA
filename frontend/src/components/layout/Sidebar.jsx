@@ -11,32 +11,39 @@ import {
   UserPlus,
   BarChart3,
   FileText,
-  UsersRound,
-  ScrollText,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 const navigation = [
   { section: "Overview", items: [{ label: "Dashboard", path: "/", icon: LayoutDashboard }] },
-  { section: "Patient Care", items: [
-    { label: "Patients", path: "/patients", icon: Users },
-    { label: "Encounters", path: "/encounters", icon: ClipboardList },
-    { label: "New Encounter", path: "/patients", icon: UserPlus },
-  ] },
-  { section: "Terminology", items: [
-    { label: "Mapping", path: "/mapping", icon: GitBranch },
-    { label: "Mapping Evidence", path: "/mapping/evidence", icon: FileSearch },
-    { label: "Review Queue", path: "/reviews", icon: ClipboardCheck },
-  ] },
-  { section: "Analytics", items: [
-    { label: "Analytics", path: "/", icon: BarChart3 },
-    { label: "Reports", path: "/", icon: FileText },
-  ] },
+  {
+    section: "Patient Care",
+    items: [
+      { label: "Patients", path: "/patients", icon: Users },
+      { label: "Encounters", path: "/encounters", icon: ClipboardList },
+      { label: "New Encounter", path: "/patients", icon: UserPlus },
+    ],
+  },
+  {
+    section: "Terminology",
+    items: [
+      { label: "Mapping", path: "/mapping", icon: GitBranch },
+      { label: "Mapping Evidence", path: "/mapping/evidence", icon: FileSearch },
+      { label: "Review Queue", path: "/reviews", icon: ClipboardCheck },
+    ],
+  },
+  {
+    section: "Analytics",
+    items: [
+      { label: "Analytics", path: "/analytics", icon: BarChart3 },
+      { label: "Reports", path: "/reports", icon: FileText },
+    ],
+  },
 ];
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
-  const isActive = (path) => path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+  const isActive = (path) => (path === "/" ? location.pathname === "/" : location.pathname.startsWith(path));
 
   return (
     <>
