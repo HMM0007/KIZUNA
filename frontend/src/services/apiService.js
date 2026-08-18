@@ -64,6 +64,10 @@ export function listPendingReviewsApi() {
   return request("/api/reviews/pending");
 }
 
+export function resetDemoDataApi() {
+  return request("/api/demo/reset", { method: "POST" });
+}
+
 export function getAnalyticsSummaryApi() {
   return request("/api/analytics/summary");
 }
