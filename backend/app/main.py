@@ -123,13 +123,23 @@ def search_terminology(
     query = normalize(q)
     results: list[dict[str, str]] = []
 
+    # Search across the complete set of clinically useful terminology fields.
+    # This includes source/target codes, English and Sanskrit terms, definitions,
+    # biomedical references, and the relationship metadata used by the prototype.
     searchable_fields = (
         "NAMASTE_PRIMARY_CODE",
         "NAMASTE_CODE",
         "NAMASTE_TERM",
         "NAMASTE_ENGLISH",
+        "NAMASTE_TERM_DIACRITICAL",
+        "NAMASTE_TERM_DEVANAGARI",
         "TM2_CODE",
         "TM2_TERM",
+        "SHORT_DEFINITION",
+        "LONG_DEFINITION",
+        "BIOMEDICAL_CODE",
+        "BIOMEDICAL_TERM",
+        "RELATIONSHIP",
     )
 
     for concept in load_terminology():
