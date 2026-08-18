@@ -1,81 +1,28 @@
-import { useEffect, useState } from "react";
-import { Activity, BarChart3, CheckCircle2, Clock3, RefreshCw, XCircle } from "lucide-react";
-import { getAnalyticsSummaryApi } from "../services/apiService";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, BarChart3, CheckCircle2, Clock3, RefreshCw, ShieldCheck, TrendingUp, XCircle } from "lucide-react";
+import { getAnalyticsSummaryApi, listEncountersApi } from "../services/apiService";
 
-const labels = {
-  DIRECT_CODE_ALIGNMENT: "Direct Code Alignment",
-  CROSS_CODE_MAPPING: "Cross-Code Mapping",
-  FOUNDATION_CONCEPT_ONLY: "Foundation Concept Only",
-  UNMAPPED: "Unmapped",
-};
+const mappingRows = [["DIRECT_CODE_ALIGNMENT", "Direct Code Alignment", "bg-blue-600"], ["CROSS_CODE_MAPPING", "Cross-Code Mapping", "bg-cyan-500"], ["FOUNDATION_CONCEPT_ONLY", "Foundation Concept Only", "bg-amber-500"], ["UNMAPPED", "Unmapped", "bg-red-500"]];
 
-const tones = {
-  DIRECT_CODE_ALIGNMENT: "bg-blue-600",
-  CROSS_CODE_MAPPING: "bg-cyan-500",
-  FOUNDATION_CONCEPT_ONLY: "bg-amber-500",
-  UNMAPPED: "bg-red-500",
-};
+function Metric({ label, value, detail, icon: Icon, tone = "blue" }) {
+  const tones = { blue: "bg-blue-50 text-blue-700 border-blue-100", green: "bg-emerald-50 text-emerald-700 border-emerald-100", amber: "bg-amber-50 text-amber-700 border-amber-100", red: "bg-red-50 text-red-700 border-red-100" };
+  return <div className="border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div><div className={`flex h-9 w-9 items-center justify-center border ${tones[tone]}`}><Icon size={17} /></div></div></div>;
+}
 
 export default function Analytics() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
-
-  const load = async (refresh = false) => {
-    try {
-      refresh ? setRefreshing(true) : setLoading(true);
-      setError("");
-      setData(await getAnalyticsSummaryApi());
-    } catch (err) {
-      setError(err.message || "Unable to load analytics.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
+  const [data, setData] = useState(null); const [encounters, setEncounters] = useState([]); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false); const [error, setError] = useState("");
+  const load = async (refresh = false) => { try { refresh ? setRefreshing(true) : setLoading(true); setError(""); const [summary, encounterData] = await Promise.all([getAnalyticsSummaryApi(), listEncountersApi()]); setData(summary); setEncounters(encounterData.results || []); } catch (err) { setError(err.message || "Unable to load analytics."); } finally { setLoading(false); setRefreshing(false); } };
   useEffect(() => { load(); }, []);
-
-  if (loading) return <div className="p-10 text-sm text-slate-500">Loading interoperability analytics…</div>;
-  if (error) return <div className="border border-red-200 bg-white p-6 text-sm text-red-700">{error}</div>;
-
-  const total = data?.total_encounters || 0;
-  const mapping = data?.mapping_distribution || {};
-  const reviews = data?.review_distribution || {};
-  const pending = reviews.PENDING || data?.review_required || 0;
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-end justify-between border-b border-slate-200 pb-4">
-        <div><h1 className="text-2xl font-semibold text-slate-900">Analytics</h1><p className="mt-1 text-sm text-slate-500">Detailed interoperability and mapping performance.</p></div>
-        <button onClick={() => load(true)} disabled={refreshing} className="inline-flex items-center gap-2 border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"><RefreshCw size={14} className={refreshing ? "animate-spin" : ""}/> Refresh</button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          ["Total encounters", total, "All persisted clinical records", Activity],
-          ["TM2 mapped", data?.mapped_encounters || 0, `${data?.mapped_rate || 0}% mapping rate`, CheckCircle2],
-          ["Pending review", pending, "Requires human validation", Clock3],
-          ["Approved", reviews.APPROVED || 0, "Latest approved decisions", CheckCircle2],
-        ].map(([title, value, detail, Icon]) => <div key={title} className="border border-slate-200 bg-white p-5"><div className="flex items-start justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</p><p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div><Icon size={18} className="text-slate-400"/></div></div>)}
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <section className="border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-5 py-4"><h2 className="text-sm font-semibold text-slate-900">Mapping performance</h2><p className="mt-1 text-xs text-slate-500">Distribution of mapping classifications.</p></div>
-          <div className="p-5 space-y-5">
-            {Object.entries(labels).map(([key, label]) => { const count = mapping[key] || 0; const pct = total ? (count / total) * 100 : 0; return <div key={key}><div className="flex justify-between text-xs"><span className="font-medium text-slate-700">{label}</span><span className="text-slate-500">{count} · {pct.toFixed(1)}%</span></div><div className="mt-2 h-2 bg-slate-100"><div className={`h-full ${tones[key]}`} style={{ width: `${pct}%` }}/></div></div>; })}
-          </div>
-        </section>
-        <section className="border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-5 py-4"><h2 className="text-sm font-semibold text-slate-900">Review outcomes</h2><p className="mt-1 text-xs text-slate-500">Latest review decision for each reviewed encounter.</p></div>
-          <div className="divide-y divide-slate-100">
-            {[["Pending", pending, "text-amber-700"],["Approved", reviews.APPROVED || 0, "text-emerald-700"],["Rejected", reviews.REJECTED || 0, "text-red-700"],["Review / kept", reviews.REVIEW || 0, "text-blue-700"]].map(([name,count,tone]) => <div key={name} className="flex items-center justify-between px-5 py-4"><span className={`text-sm font-medium ${tone}`}>{name}</span><span className="text-sm font-semibold text-slate-800">{count}</span></div>)}
-          </div>
-          <div className="border-t border-slate-200 bg-slate-50 px-5 py-4 text-xs text-slate-500"><BarChart3 size={14} className="mr-2 inline"/>Analytics are calculated from persisted API records.</div>
-        </section>
-      </div>
+  const total = data?.total_encounters || 0; const mapped = data?.mapped_encounters || 0; const distribution = data?.mapping_distribution || {}; const reviews = data?.review_distribution || {}; const pending = reviews.PENDING || data?.review_required || 0; const approved = reviews.APPROVED || 0; const rejected = reviews.REJECTED || 0; const reviewed = pending + approved + rejected; const latest = useMemo(() => encounters.slice(0, 6), [encounters]);
+  if (loading) return <div className="flex min-h-[480px] items-center justify-center text-sm text-slate-500"><RefreshCw size={17} className="mr-2 animate-spin" /> Loading analytics...</div>;
+  if (error) return <div className="border border-red-200 bg-white p-6"><p className="font-semibold text-slate-900">Analytics unavailable</p><p className="mt-1 text-sm text-slate-500">{error}</p><button onClick={() => load()} className="mt-4 border border-slate-300 px-3 py-2 text-sm font-medium">Try again</button></div>;
+  return <div className="space-y-5">
+    <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2"><h1 className="text-2xl font-semibold text-slate-950">Analytics</h1><span className="inline-flex items-center gap-1 border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700"><Activity size={11} /> Live API</span></div><p className="mt-1 text-sm text-slate-500">Interoperability performance, mapping distribution and human-review outcomes.</p></div><button onClick={() => load(true)} disabled={refreshing} className="inline-flex items-center gap-2 border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"><RefreshCw size={14} className={refreshing ? "animate-spin" : ""} /> Refresh data</button></div>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Total encounters" value={total} detail="Persisted clinical records" icon={BarChart3} /><Metric label="TM2 mapped" value={mapped} detail={`${data?.mapped_rate ?? 0}% mapping coverage`} icon={ShieldCheck} tone="green" /><Metric label="Pending review" value={pending} detail="Requires clinical decision" icon={Clock3} tone="amber" /><Metric label="Review completion" value={`${reviewed ? Math.round(((approved + rejected) / reviewed) * 100) : 0}%`} detail={`${approved + rejected} completed decisions`} icon={TrendingUp} tone="blue" /></div>
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 px-5 py-4"><h2 className="text-sm font-semibold text-slate-900">Mapping performance</h2><p className="mt-1 text-xs text-slate-500">How encounters are classified across the terminology bridge.</p></div><div className="space-y-5 p-5">{mappingRows.map(([key, label, color]) => { const count = distribution[key] || 0; const pct = total ? count / total * 100 : 0; return <div key={key}><div className="mb-2 flex items-center justify-between gap-3"><span className="text-sm font-medium text-slate-700">{label}</span><span className="text-xs font-semibold text-slate-700">{count} <span className="font-normal text-slate-400">({pct.toFixed(1)}%)</span></span></div><div className="h-2.5 bg-slate-100"><div className={`h-full ${color} transition-all`} style={{ width: `${pct}%` }} /></div></div>; })}</div><div className="grid grid-cols-3 border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs"><span className="font-semibold text-slate-700">Mapped coverage</span><span className="text-center text-slate-500">{mapped} / {total}</span><span className="text-right font-semibold text-slate-700">{data?.mapped_rate ?? 0}%</span></div></section>
+      <section className="border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 px-5 py-4"><h2 className="text-sm font-semibold text-slate-900">Human review outcomes</h2><p className="mt-1 text-xs text-slate-500">Disposition of mapping decisions.</p></div><div className="p-5"><div className="grid grid-cols-3 gap-2"><div className="border border-amber-200 bg-amber-50 p-4"><Clock3 size={16} className="text-amber-700" /><p className="mt-3 text-2xl font-semibold text-slate-900">{pending}</p><p className="text-xs font-medium text-amber-700">Pending</p></div><div className="border border-emerald-200 bg-emerald-50 p-4"><CheckCircle2 size={16} className="text-emerald-700" /><p className="mt-3 text-2xl font-semibold text-slate-900">{approved}</p><p className="text-xs font-medium text-emerald-700">Approved</p></div><div className="border border-red-200 bg-red-50 p-4"><XCircle size={16} className="text-red-700" /><p className="mt-3 text-2xl font-semibold text-slate-900">{rejected}</p><p className="text-xs font-medium text-red-700">Rejected</p></div></div><div className="mt-5 h-2 bg-slate-100"><div className="flex h-full">{reviewed > 0 && <><div className="bg-emerald-600" style={{ width: `${approved / reviewed * 100}%` }} /><div className="bg-red-500" style={{ width: `${rejected / reviewed * 100}%` }} /><div className="bg-amber-500" style={{ width: `${pending / reviewed * 100}%` }} /></>}</div></div><div className="mt-3 flex justify-between text-[11px] text-slate-500"><span>{approved} approved</span><span>{rejected} rejected</span><span>{pending} pending</span></div></div></section>
     </div>
-  );
+    <section className="border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-200 px-5 py-4"><div><h2 className="text-sm font-semibold text-slate-900">Recent interoperability activity</h2><p className="mt-1 text-xs text-slate-500">Latest encounters contributing to the current metrics.</p></div><span className="text-xs text-slate-400">{encounters.length} total records</span></div>{latest.length === 0 ? <div className="px-5 py-12 text-center text-sm text-slate-400">No encounter data available.</div> : <div className="overflow-x-auto"><table className="min-w-full text-left"><thead className="border-b border-slate-200 bg-slate-50"><tr className="text-[10px] font-bold uppercase tracking-wide text-slate-500"><th className="px-5 py-3">Encounter</th><th className="px-5 py-3">Patient</th><th className="px-5 py-3">Diagnosis</th><th className="px-5 py-3">NAMASTE</th><th className="px-5 py-3">TM2</th><th className="px-5 py-3">Mapping</th></tr></thead><tbody className="divide-y divide-slate-100">{latest.map(e => <tr key={e.id} className="hover:bg-slate-50"><td className="px-5 py-3 text-xs font-semibold text-slate-700">ENC-{String(e.id).padStart(6, "0")}</td><td className="px-5 py-3 text-xs text-slate-600">{e.patient_id}</td><td className="px-5 py-3 text-sm text-slate-800">{e.diagnosis}</td><td className="px-5 py-3 font-mono text-xs text-slate-500">{e.namaste_code || "—"}</td><td className="px-5 py-3 font-mono text-xs text-slate-500">{e.tm2_code || "—"}</td><td className="px-5 py-3 text-xs font-medium text-slate-600">{(e.mapping_class || "UNMAPPED").replaceAll("_", " ")}</td></tr>)}</tbody></table></div>}</section>
+  </div>;
 }
