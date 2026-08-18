@@ -281,5 +281,5 @@ def list_pending_reviews() -> dict[str, Any]:
 
 @app.get("/api/reviews", tags=["Human Review"])
 def list_reviews() -> dict[str, Any]:
-    results = review_query(REVIEW_SELECT, f"WHERE {REVIEWABLE_SQL}")
+    results = review_query(REVIEW_SELECT, f"WHERE {REVIEWABLE_SQL} AND {REVIEWED_SQL}")
     return {"count": len(results), "results": results}
