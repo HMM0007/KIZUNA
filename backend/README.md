@@ -1,6 +1,8 @@
-# KIZUNA Backend
+# Team Tenacious Interoperability API
 
-FastAPI prototype backend for terminology search, encounter persistence, and human review.
+FastAPI prototype for NAMASTE–ICD-11 TM2 terminology mapping, clinical encounter persistence, mapping evidence, and human review.
+
+The repository/folder may remain named `KIZUNA`; this is only the user-facing API/product naming.
 
 ## Run locally
 
@@ -47,9 +49,9 @@ It also creates example `APPROVED` and `REVIEW` decisions so the Review Queue an
 
 ## Endpoints
 
-Terminology:
+Terminology Mapping:
 
-- `GET /api/terminology/search?q=diabetes`
+- `GET /api/terminology/search?q=...`
 - `GET /api/terminology/{namaste_code}`
 
 Encounters:
@@ -58,7 +60,7 @@ Encounters:
 - `GET /api/encounters`
 - `GET /api/encounters/{encounter_id}`
 
-Reviews:
+Human Review:
 
 - `POST /api/reviews`
 - `GET /api/reviews`
