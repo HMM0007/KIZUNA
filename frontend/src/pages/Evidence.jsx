@@ -10,7 +10,6 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-
 import { searchTerminologyApi } from "../services/apiService";
 
 const DEMO_CONCEPTS = ["osteoarthritis", "tremor", "contracture", "pelvic pain"];
@@ -31,21 +30,12 @@ function StatusBadge({ value }) {
     amber: "border-amber-200 bg-amber-50 text-amber-700",
     slate: "border-slate-200 bg-slate-100 text-slate-600",
   };
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${styles[config.tone]}`}>
-      <Icon size={14} /> {config.label}
-    </span>
-  );
+  return <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${styles[config.tone]}`}><Icon size={14} />{config.label}</span>;
 }
 
 function Field({ label, value, mono = false }) {
   if (!value) return null;
-  return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className={`mt-1.5 break-words text-sm text-slate-800 ${mono ? "font-mono text-xs" : ""}`}>{value}</p>
-    </div>
-  );
+  return <div><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p><p className={`mt-1.5 break-words text-sm text-slate-800 ${mono ? "font-mono text-xs" : ""}`}>{value}</p></div>;
 }
 
 function Evidence() {
@@ -54,7 +44,7 @@ function Evidence() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadConcept = async (value) => {
+  const inspect = async (value) => {
     const q = value.trim();
     if (!q) return;
     try {
@@ -75,115 +65,59 @@ function Evidence() {
     }
   };
 
-  useEffect(() => {
-    loadConcept("tremor");
-  }, []);
+  useEffect(() => { inspect("tremor"); }, []);
 
   const status = concept?.MAPPING_CLASS || "UNMAPPED";
-  const confidence = concept?.CONFIDENCE !== undefined && concept?.CONFIDENCE !== ""
-    ? `${(Number(concept.CONFIDENCE) * 100).toFixed(0)}%`
-    : "Not calculated";
+  const confidence = concept?.CONFIDENCE !== undefined && concept?.CONFIDENCE !== "" ? `${Math.round(Number(concept.CONFIDENCE) * 100)}%` : "Not calculated";
+  const sourceName = concept?.NAMASTE_ENGLISH || concept?.NAMASTE_TERM || "Unnamed concept";
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold text-slate-900">Mapping Evidence</h1>
-          {concept && <StatusBadge value={status} />}
-        </div>
-        <p className="mt-1 text-sm text-slate-500">Trace the terminology relationship, classification state, confidence, and supporting source fields.</p>
-      </div>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-5">
+      <header className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+        <div className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-blue-50" />
         <div className="relative">
-          <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && loadConcept(query)}
-            placeholder="Search a terminology concept..."
-            className="w-full rounded-md border border-slate-300 py-2.5 pl-10 pr-24 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-          />
-          <button type="button" onClick={() => loadConcept(query)} disabled={loading} className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
-            {loading ? "Loading..." : "Inspect"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3"><span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">Traceability</span>{concept && <StatusBadge value={status} />}</div>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">Mapping Evidence</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Inspect exactly what the interoperability service knows about a terminology relationship, without fabricating missing codes.</p>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-[11px] text-slate-400">Demo cases:</span>
-          {DEMO_CONCEPTS.map((item) => (
-            <button key={item} type="button" onClick={() => loadConcept(item)} className="rounded-md border border-slate-200 px-2.5 py-1.5 text-[11px] text-slate-600 hover:bg-slate-50">
-              {item}
-            </button>
-          ))}
+      </header>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative flex-1"><Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && inspect(query)} placeholder="Search diagnosis, NAMASTE code or terminology term..." className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-50" /></div>
+          <button type="button" onClick={() => inspect(query)} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:opacity-50">{loading && <Loader2 size={15} className="animate-spin" />}{loading ? "Inspecting" : "Inspect mapping"}</button>
         </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2"><span className="mr-1 text-[11px] font-medium text-slate-400">Demo:</span>{DEMO_CONCEPTS.map((item) => <button key={item} type="button" onClick={() => inspect(item)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">{item}</button>)}</div>
       </section>
 
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
-      {loading && !concept ? (
-        <div className="flex min-h-[300px] items-center justify-center text-sm text-slate-500"><Loader2 size={18} className="mr-2 animate-spin" /> Loading evidence...</div>
-      ) : concept ? (
-        <>
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
-            <div className="rounded-lg border border-slate-200 bg-white p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">NAMASTE source concept</p>
-              <Field label="Code" value={concept.NAMASTE_CODE} mono />
-              <div className="mt-5"><Field label="English term" value={concept.NAMASTE_ENGLISH} /></div>
-              <div className="mt-5"><Field label="Terminology term" value={concept.NAMASTE_TERM} /></div>
-              <div className="mt-5"><Field label="Diacritical term" value={concept.NAMASTE_TERM_DIACRITICAL} /></div>
-              <div className="mt-5"><Field label="Devanagari term" value={concept.NAMASTE_TERM_DEVANAGARI} /></div>
-            </div>
-
-            <div className="flex items-center justify-center text-slate-400">
-              <div className="flex flex-col items-center gap-2"><span className="text-[10px] uppercase tracking-wide">relationship</span><div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white"><ArrowRight size={16} /></div></div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">ICD-11 TM2 / Foundation target</p>
-              <Field label="TM2 code" value={concept.TM2_CODE} mono />
-              <div className="mt-5"><Field label="TM2 term" value={concept.TM2_TERM} /></div>
-              <div className="mt-5"><Field label="WHO URI" value={concept.TM2_URI} mono /></div>
-              {!concept.TM2_CODE && <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">No classified TM2 code is present in this record. KIZUNA should not invent one.</div>}
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-5 py-4"><h2 className="text-sm font-semibold text-slate-900">Traceability</h2><p className="mt-1 text-xs text-slate-500">Evidence returned directly from the terminology mapping API.</p></div>
-            <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              <div className="px-5 py-4"><Field label="Mapping class" value={STATUS[status]?.label || status} /></div>
-              <div className="px-5 py-4"><Field label="Mapping status" value={concept.MAPPING_STATUS} /></div>
-              <div className="px-5 py-4"><Field label="Confidence" value={confidence} /></div>
-            </div>
-            <div className="grid grid-cols-1 gap-5 border-t border-slate-100 p-5 md:grid-cols-2">
-              <Field label="Relationship" value={concept.RELATIONSHIP} />
-              <Field label="Source" value={concept.SOURCE} />
-              <Field label="Dataset version" value={concept.VERSION} />
-              <Field label="Biomedical code" value={concept.BIOMEDICAL_CODE} mono />
-              <Field label="Biomedical term" value={concept.BIOMEDICAL_TERM} />
-              <Field label="Primary NAMASTE code" value={concept.NAMASTE_PRIMARY_CODE} mono />
-            </div>
-          </section>
-
-          {(concept.SHORT_DEFINITION || concept.LONG_DEFINITION) && (
-            <section className="rounded-lg border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 px-5 py-4"><div className="flex items-center gap-2"><FileText size={16} className="text-slate-400" /><h2 className="text-sm font-semibold text-slate-900">Definitions</h2></div></div>
-              <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
-                <Field label="Short definition" value={concept.SHORT_DEFINITION} />
-                <Field label="Long definition" value={concept.LONG_DEFINITION} />
-              </div>
-            </section>
-          )}
-
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
-            <Database size={16} className="shrink-0 text-slate-400" />
-            Evidence is read through the Team Tenacious Interoperability API; the UI does not manufacture missing target codes or mapping evidence.
+      {loading && !concept ? <div className="flex min-h-[280px] items-center justify-center text-sm text-slate-500"><Loader2 size={18} className="mr-2 animate-spin" />Loading evidence...</div> : concept && <>
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_64px_1fr]">
+          <div className="surface-lift rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Source</p><h2 className="mt-2 text-lg font-semibold text-slate-950">NAMASTE</h2></div><span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-[11px] text-slate-600">{concept.NAMASTE_CODE || "—"}</span></div>
+            <p className="mt-6 text-xl font-semibold tracking-tight text-slate-900">{sourceName}</p>
+            <div className="mt-5 space-y-4"><Field label="Terminology term" value={concept.NAMASTE_TERM} /><Field label="Diacritical term" value={concept.NAMASTE_TERM_DIACRITICAL} /><Field label="Devanagari term" value={concept.NAMASTE_TERM_DEVANAGARI} /></div>
           </div>
-        </>
-      ) : null}
+          <div className="flex items-center justify-center"><div className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm"><ArrowRight size={18} className="text-slate-500" /></div></div>
+          <div className="surface-lift rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Target</p><h2 className="mt-2 text-lg font-semibold text-slate-950">ICD-11 TM2</h2></div><span className="rounded-lg bg-blue-50 px-2.5 py-1 font-mono text-[11px] text-blue-700">{concept.TM2_CODE || "No code"}</span></div>
+            <p className="mt-6 text-xl font-semibold tracking-tight text-slate-900">{concept.TM2_TERM || "No classified target"}</p>
+            <div className="mt-5 space-y-4"><Field label="Relationship" value={concept.RELATIONSHIP} /><Field label="WHO reference" value={concept.TM2_URI} mono /></div>
+            {!concept.TM2_CODE && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-800"><strong>No classified TM2 code.</strong> The service preserves the unresolved state instead of guessing a target.</div>}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-semibold text-slate-950">Traceability record</h2><p className="mt-1 text-xs text-slate-500">Evidence returned by the Team Tenacious Interoperability API.</p></div><StatusBadge value={status} /></div>
+          <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-4"><div className="bg-white p-5"><Field label="Confidence" value={confidence} /></div><div className="bg-white p-5"><Field label="Status" value={concept.MAPPING_STATUS} /></div><div className="bg-white p-5"><Field label="Source" value={concept.SOURCE} /></div><div className="bg-white p-5"><Field label="Dataset" value={concept.VERSION} /></div></div>
+          <div className="grid grid-cols-1 gap-5 border-t border-slate-100 p-6 md:grid-cols-3"><Field label="Biomedical code" value={concept.BIOMEDICAL_CODE} mono /><Field label="Biomedical term" value={concept.BIOMEDICAL_TERM} /><Field label="Primary NAMASTE code" value={concept.NAMASTE_PRIMARY_CODE} mono /></div>
+        </section>
+
+        {(concept.SHORT_DEFINITION || concept.LONG_DEFINITION) && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-center gap-2"><FileText size={16} className="text-slate-400" /><h2 className="text-sm font-semibold text-slate-950">Definitions</h2></div><div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2"><Field label="Short definition" value={concept.SHORT_DEFINITION} /><Field label="Long definition" value={concept.LONG_DEFINITION} /></div></section>}
+
+        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600"><Database size={16} className="mt-0.5 shrink-0 text-slate-400" />All evidence is read from the API response. Missing target codes remain explicitly unresolved.</div>
+      </>}
     </div>
   );
 }
