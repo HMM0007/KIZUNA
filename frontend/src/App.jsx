@@ -7,6 +7,8 @@ import Patients from "./pages/Patients";
 import Encounters from "./pages/Encounters";
 import Mapping from "./pages/Mapping";
 import ReviewQueue from "./pages/ReviewQueue";
+import PatientDetails from "./pages/PatientDetails";
+import NewEncounter from "./pages/NewEncounter";
 
 function Settings() {
   return (
@@ -33,7 +35,9 @@ function App() {
           <Route path="/mapping" element={<Mapping />} />
           <Route path="/reviews" element={<ReviewQueue />} />
           <Route path="/settings" element={<Settings />} />
-        </Route>
+          <Route path="/patients/:patientId" element={<PatientDetails />}/>
+          <Route  path="/patients/:patientId/encounters/new" element={<NewEncounter /> }/>
+          </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
