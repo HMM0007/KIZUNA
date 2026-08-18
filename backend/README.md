@@ -15,14 +15,37 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-API documentation is available at:
+## API documentation
+
+Open the interactive Swagger UI:
 
 - `http://localhost:8000/docs`
+
+Alternative ReDoc documentation:
+
 - `http://localhost:8000/redoc`
 
 Health check:
 
 - `GET /api/health`
+
+## Demo data
+
+After starting the API once, run from the `backend` directory:
+
+```bash
+python seed_demo.py
+```
+
+The seeder is repeat-safe and uses clearly labelled `DEMO-*` patient IDs. It creates three representative encounter states:
+
+1. Cross-code mapping with a TM2 target.
+2. Foundation-only concept without a classified TM2 target.
+3. Unmapped concept requiring human review.
+
+It also creates example `APPROVED` and `REVIEW` decisions so the Review Queue and Dashboard can be demonstrated end-to-end.
+
+## Endpoints
 
 Terminology:
 
