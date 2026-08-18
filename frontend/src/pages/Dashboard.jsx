@@ -158,7 +158,7 @@ function Dashboard() {
             <div>
               <p className="text-sm font-semibold text-slate-900">Analytics unavailable</p>
               <p className="mt-1 text-sm text-slate-500">{error}</p>
-              <p className="mt-2 text-xs text-slate-400">Start the FastAPI backend on port 8000 and refresh the dashboard.</p>
+              <p className="mt-2 text-xs text-slate-400">Start the Team Tenacious Interoperability API on port 8000 and refresh the dashboard.</p>
             </div>
           </div>
         </div>
@@ -249,7 +249,7 @@ function Dashboard() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Recent encounters</h2>
-              <p className="mt-1 text-xs text-slate-500">Latest records received from the KIZUNA API.</p>
+              <p className="mt-1 text-xs text-slate-500">Latest records received from the Team Tenacious Interoperability API.</p>
             </div>
             <span className="text-xs text-slate-400">{encounters.length} total</span>
           </div>
