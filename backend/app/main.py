@@ -38,9 +38,19 @@ class EncounterCreate(BaseModel):
     namaste_english: str = ""
     tm2_code: str = ""
     tm2_term: str = ""
+    tm2_uri: str = ""
     mapping_class: str = "UNMAPPED"
+    mapping_status: str = "UNMAPPED"
+    relationship: str = ""
     confidence: float | None = None
     source: str = ""
+    version: str = ""
+    biomedical_code: str = ""
+    biomedical_term: str = ""
+    short_definition: str = ""
+    long_definition: str = ""
+    namaste_term_diacritical: str = ""
+    namaste_term_devanagari: str = ""
 
 
 class ReviewCreate(BaseModel):
@@ -54,6 +64,12 @@ def db_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(DB_FILE)
     connection.row_factory = sqlite3.Row
     return connection
+
+
+def ensure_column(connection: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    columns = {row[1] for row in connection.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in columns:
+        connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
 def initialize_database() -> None:
@@ -70,9 +86,19 @@ def initialize_database() -> None:
                 namaste_english TEXT NOT NULL DEFAULT '',
                 tm2_code TEXT NOT NULL DEFAULT '',
                 tm2_term TEXT NOT NULL DEFAULT '',
+                tm2_uri TEXT NOT NULL DEFAULT '',
                 mapping_class TEXT NOT NULL DEFAULT 'UNMAPPED',
+                mapping_status TEXT NOT NULL DEFAULT 'UNMAPPED',
+                relationship TEXT NOT NULL DEFAULT '',
                 confidence REAL,
                 source TEXT NOT NULL DEFAULT '',
+                version TEXT NOT NULL DEFAULT '',
+                biomedical_code TEXT NOT NULL DEFAULT '',
+                biomedical_term TEXT NOT NULL DEFAULT '',
+                short_definition TEXT NOT NULL DEFAULT '',
+                long_definition TEXT NOT NULL DEFAULT '',
+                namaste_term_diacritical TEXT NOT NULL DEFAULT '',
+                namaste_term_devanagari TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL
             )
             """
@@ -90,13 +116,26 @@ def initialize_database() -> None:
             )
             """
         )
+        migrations = {
+            "tm2_uri": "TEXT NOT NULL DEFAULT ''",
+            "mapping_status": "TEXT NOT NULL DEFAULT 'UNMAPPED'",
+            "relationship": "TEXT NOT NULL DEFAULT ''",
+            "version": "TEXT NOT NULL DEFAULT ''",
+            "biomedical_code": "TEXT NOT NULL DEFAULT ''",
+            "biomedical_term": "TEXT NOT NULL DEFAULT ''",
+            "short_definition": "TEXT NOT NULL DEFAULT ''",
+            "long_definition": "TEXT NOT NULL DEFAULT ''",
+            "namaste_term_diacritical": "TEXT NOT NULL DEFAULT ''",
+            "namaste_term_devanagari": "TEXT NOT NULL DEFAULT ''",
+        }
+        for column, definition in migrations.items():
+            ensure_column(connection, "encounters", column, definition)
         connection.commit()
 
 
 def load_terminology() -> list[dict[str, str]]:
     if not DATA_FILE.exists():
         raise HTTPException(status_code=500, detail="Terminology dataset is unavailable.")
-
     with DATA_FILE.open("r", encoding="utf-8-sig", newline="") as file:
         return list(csv.DictReader(file))
 
@@ -122,29 +161,16 @@ def search_terminology(
 ) -> dict[str, Any]:
     query = normalize(q)
     results: list[dict[str, str]] = []
-
     searchable_fields = (
-        "NAMASTE_PRIMARY_CODE",
-        "NAMASTE_CODE",
-        "NAMASTE_TERM",
-        "NAMASTE_ENGLISH",
-        "NAMASTE_TERM_DIACRITICAL",
-        "NAMASTE_TERM_DEVANAGARI",
-        "TM2_CODE",
-        "TM2_TERM",
-        "SHORT_DEFINITION",
-        "LONG_DEFINITION",
-        "BIOMEDICAL_CODE",
-        "BIOMEDICAL_TERM",
-        "RELATIONSHIP",
+        "NAMASTE_PRIMARY_CODE", "NAMASTE_CODE", "NAMASTE_TERM", "NAMASTE_ENGLISH",
+        "NAMASTE_TERM_DIACRITICAL", "NAMASTE_TERM_DEVANAGARI", "TM2_CODE", "TM2_TERM",
+        "SHORT_DEFINITION", "LONG_DEFINITION", "BIOMEDICAL_CODE", "BIOMEDICAL_TERM", "RELATIONSHIP",
     )
-
     for concept in load_terminology():
         if any(query in normalize(concept.get(field)) for field in searchable_fields):
             results.append(concept)
         if len(results) >= limit:
             break
-
     return {"query": q, "count": len(results), "results": results}
 
 
@@ -163,29 +189,23 @@ def create_encounter(payload: EncounterCreate) -> dict[str, Any]:
         cursor = connection.execute(
             """
             INSERT INTO encounters (
-                patient_id, diagnosis, clinical_notes, namaste_code, namaste_term,
-                namaste_english, tm2_code, tm2_term, mapping_class, confidence,
-                source, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                patient_id, diagnosis, clinical_notes, namaste_code, namaste_term, namaste_english,
+                tm2_code, tm2_term, tm2_uri, mapping_class, mapping_status, relationship, confidence,
+                source, version, biomedical_code, biomedical_term, short_definition, long_definition,
+                namaste_term_diacritical, namaste_term_devanagari, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                payload.patient_id,
-                payload.diagnosis,
-                payload.clinical_notes,
-                payload.namaste_code,
-                payload.namaste_term,
-                payload.namaste_english,
-                payload.tm2_code,
-                payload.tm2_term,
-                payload.mapping_class,
-                payload.confidence,
-                payload.source,
-                created_at,
+                payload.patient_id, payload.diagnosis, payload.clinical_notes, payload.namaste_code,
+                payload.namaste_term, payload.namaste_english, payload.tm2_code, payload.tm2_term,
+                payload.tm2_uri, payload.mapping_class, payload.mapping_status, payload.relationship,
+                payload.confidence, payload.source, payload.version, payload.biomedical_code,
+                payload.biomedical_term, payload.short_definition, payload.long_definition,
+                payload.namaste_term_diacritical, payload.namaste_term_devanagari, created_at,
             ),
         )
         connection.commit()
         encounter_id = cursor.lastrowid
-
     return {"id": encounter_id, "status": "created", "created_at": created_at}
 
 
@@ -193,23 +213,16 @@ def create_encounter(payload: EncounterCreate) -> dict[str, Any]:
 def list_encounters(patient_id: str | None = None) -> dict[str, Any]:
     with db_connection() as connection:
         if patient_id:
-            rows = connection.execute(
-                "SELECT * FROM encounters WHERE patient_id = ? ORDER BY id DESC",
-                (patient_id,),
-            ).fetchall()
+            rows = connection.execute("SELECT * FROM encounters WHERE patient_id = ? ORDER BY id DESC", (patient_id,)).fetchall()
         else:
             rows = connection.execute("SELECT * FROM encounters ORDER BY id DESC").fetchall()
-
     return {"count": len(rows), "results": [dict(row) for row in rows]}
 
 
 @app.get("/api/encounters/{encounter_id}", tags=["Encounters"])
 def get_encounter(encounter_id: int) -> dict[str, Any]:
     with db_connection() as connection:
-        row = connection.execute(
-            "SELECT * FROM encounters WHERE id = ?", (encounter_id,)
-        ).fetchone()
-
+        row = connection.execute("SELECT * FROM encounters WHERE id = ?", (encounter_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Encounter not found.")
     return dict(row)
@@ -218,29 +231,15 @@ def get_encounter(encounter_id: int) -> dict[str, Any]:
 @app.post("/api/reviews", status_code=201, tags=["Human Review"])
 def create_review(payload: ReviewCreate) -> dict[str, Any]:
     reviewed_at = datetime.now(timezone.utc).isoformat()
-
     with db_connection() as connection:
-        encounter = connection.execute(
-            "SELECT id FROM encounters WHERE id = ?", (payload.encounter_id,)
-        ).fetchone()
+        encounter = connection.execute("SELECT id FROM encounters WHERE id = ?", (payload.encounter_id,)).fetchone()
         if encounter is None:
             raise HTTPException(status_code=404, detail="Encounter not found.")
-
         cursor = connection.execute(
-            """
-            INSERT INTO reviews (encounter_id, decision, reviewer, notes, reviewed_at)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (
-                payload.encounter_id,
-                payload.decision,
-                payload.reviewer,
-                payload.notes,
-                reviewed_at,
-            ),
+            "INSERT INTO reviews (encounter_id, decision, reviewer, notes, reviewed_at) VALUES (?, ?, ?, ?, ?)",
+            (payload.encounter_id, payload.decision, payload.reviewer, payload.notes, reviewed_at),
         )
         connection.commit()
-
     return {"id": cursor.lastrowid, "status": "recorded", "reviewed_at": reviewed_at}
 
 
@@ -249,14 +248,13 @@ def list_reviews() -> dict[str, Any]:
     with db_connection() as connection:
         rows = connection.execute(
             """
-            SELECT
-                r.id, r.encounter_id, r.decision, r.reviewer, r.notes, r.reviewed_at,
-                e.patient_id, e.diagnosis, e.namaste_code, e.namaste_english,
-                e.tm2_code, e.tm2_term, e.mapping_class, e.confidence, e.source
-            FROM reviews r
-            JOIN encounters e ON e.id = r.encounter_id
-            ORDER BY r.id DESC
+            SELECT r.id, r.encounter_id, r.decision, r.reviewer, r.notes, r.reviewed_at,
+                   e.patient_id, e.diagnosis, e.namaste_code, e.namaste_english,
+                   e.tm2_code, e.tm2_term, e.tm2_uri, e.mapping_class, e.mapping_status,
+                   e.relationship, e.confidence, e.source, e.version,
+                   e.biomedical_code, e.biomedical_term, e.short_definition, e.long_definition,
+                   e.namaste_term_diacritical, e.namaste_term_devanagari
+            FROM reviews r JOIN encounters e ON e.id = r.encounter_id ORDER BY r.id DESC
             """
         ).fetchall()
-
     return {"count": len(rows), "results": [dict(row) for row in rows]}
