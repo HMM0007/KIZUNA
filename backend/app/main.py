@@ -154,6 +154,22 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "team-tenacious-interoperability-api", "version": app.version}
 
 
+@app.get("/api/terminology", tags=["Terminology Mapping"])
+def list_terminology(
+    limit: int = Query(default=300, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    concepts = load_terminology()
+    results = concepts[offset : offset + limit]
+    return {
+        "count": len(results),
+        "total": len(concepts),
+        "offset": offset,
+        "limit": limit,
+        "results": results,
+    }
+
+
 @app.get("/api/terminology/search", tags=["Terminology Mapping"])
 def search_terminology(
     q: str = Query(min_length=1),
