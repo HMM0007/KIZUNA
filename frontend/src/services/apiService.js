@@ -59,4 +59,8 @@ export function listPendingReviewsApi() {
   return request("/api/reviews/pending");
 }
 
+export function getAnalyticsSummaryApi() {
+  return request("/api/analytics/summary");
+}
+
 export { API_BASE_URL };
