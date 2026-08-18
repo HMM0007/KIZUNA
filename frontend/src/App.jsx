@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Encounters from "./pages/Encounters";
 import Mapping from "./pages/Mapping";
+import Evidence from "./pages/Evidence";
 import ReviewQueue from "./pages/ReviewQueue";
 import PatientDetails from "./pages/PatientDetails";
 import NewEncounterApi from "./pages/NewEncounterApi";
@@ -28,6 +29,7 @@ function App() {
           <Route path="/patients" element={<Patients />} />
           <Route path="/encounters" element={<Encounters />} />
           <Route path="/mapping" element={<Mapping />} />
+          <Route path="/mapping/evidence" element={<Evidence />} />
           <Route path="/reviews" element={<ReviewQueue />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/patients/:patientId" element={<PatientDetails />} />
