@@ -32,40 +32,29 @@ button { -webkit-tap-highlight-color: transparent; }
 .shadow-sm { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important; }
 .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important; }
 
-/* Reduce SaaS-style lift/animation across clinical workflows. */
 .surface-lift { transition: border-color 160ms ease, box-shadow 160ms ease; }
 .surface-lift:hover { transform: none !important; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important; }
 
-/* Clinical controls */
-input, textarea, select {
-  border-radius: 6px;
+/* Remove decorative floating blobs used by the earlier SaaS-style treatment. */
+[class*="-right-12"][class*="-top-16"],
+[class*="-right-16"][class*="-top-20"] {
+  display: none !important;
 }
 
+/* Clinical controls */
+input, textarea, select { border-radius: 6px; }
 input:focus, textarea:focus, select:focus {
   border-color: #2563eb !important;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.10) !important;
 }
 
 /* Tables should read like clinical records, not marketing cards. */
-table thead {
-  background: #f8fafc;
-}
+table thead { background: #f8fafc; }
+table th { color: #667085; letter-spacing: 0.02em; }
+table tbody tr { transition: background-color 120ms ease; }
 
-table th {
-  color: #667085;
-  letter-spacing: 0.02em;
-}
+.rounded-full.border { letter-spacing: 0.01em; }
 
-table tbody tr {
-  transition: background-color 120ms ease;
-}
-
-/* Keep clinical status pills compact. */
-.rounded-full.border {
-  letter-spacing: 0.01em;
-}
-
-/* Disable decorative motion when the user prefers reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
