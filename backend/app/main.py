@@ -301,6 +301,24 @@ def list_reviews() -> dict[str, Any]:
     return {"count": len(results), "results": results}
 
 
+@app.post("/api/demo/reset", tags=["Demo & Administration"])
+def reset_demo_data() -> dict[str, Any]:
+    """Clear all locally stored encounter and review records for a clean demo state."""
+    with db_connection() as connection:
+        review_count = connection.execute("SELECT COUNT(*) FROM reviews").fetchone()[0]
+        encounter_count = connection.execute("SELECT COUNT(*) FROM encounters").fetchone()[0]
+        connection.execute("DELETE FROM reviews")
+        connection.execute("DELETE FROM encounters")
+        connection.execute("DELETE FROM sqlite_sequence WHERE name IN ('reviews', 'encounters')")
+        connection.commit()
+    return {
+        "status": "reset",
+        "deleted_reviews": review_count,
+        "deleted_encounters": encounter_count,
+        "message": "All locally stored encounter and review records were removed. Terminology source data was not modified.",
+    }
+
+
 @app.get("/api/analytics/summary", tags=["Analytics"])
 def analytics_summary() -> dict[str, Any]:
     with db_connection() as connection:
